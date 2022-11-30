@@ -88,6 +88,7 @@ pub fn fourier_transform(
 
 fn main() {
     (5..10000).into_par_iter().for_each(|prime_index| {
+        let start = std::time::Instant::now();
         let mut f = vec![];
         let mut s_ax = vec![];
         let mut s_bfx = vec![];
@@ -178,6 +179,13 @@ fn main() {
             }
         }
 
-        println!("p = {:?} | max = {:.2?}", p, ft_max);
+        let end = std::time::Instant::now();
+
+        println!(
+            "p = {:?} | max = {:.2?} (took {:.2?})",
+            p,
+            ft_max,
+            end - start
+        );
     })
 }
