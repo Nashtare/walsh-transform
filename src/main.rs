@@ -67,18 +67,15 @@ pub fn fourier_transform(
     s_ax: &[Vec<Complex32>],
     s_bfx: &[Vec<Complex32>],
     p: u64,
-    boo: bool,
 ) -> Complex32 {
     let mut result = Complex32::zero();
     for x0 in 0..p {
         for x1 in 0..p {
             let x = [x0, x1];
-            let tmp = s_bfx[list_to_int(b, p)][list_to_int(&x, p)];
+            let x_int = list_to_int(&x, p);
+            let tmp = s_bfx[list_to_int(b, p)][x_int];
             if !tmp.is_zero() {
-                result += s_ax[list_to_int(a, p)][list_to_int(&x, p)] / tmp;
-                if boo {
-                    println!("{:?}", result);
-                }
+                result += s_ax[list_to_int(a, p)][x_int] / tmp;
             }
         }
     }
@@ -92,10 +89,10 @@ fn main() {
 
         let p = StreamingSieve::nth_prime(prime_index) as u64;
         let mut alpha = 2u64;
-        let (mut g, _, _) = egcd(alpha as i64, (p - 1) as i64);
+        let (mut g, _, _) = egcd(alpha, p - 1);
         while g != 1 {
             alpha += 1;
-            (g, _, _) = egcd(alpha as i64, (p - 1) as i64);
+            (g, _, _) = egcd(alpha, p - 1);
         }
         let mut beta = 2;
         let mut beta_bigint: BigInt = beta.into();
@@ -170,10 +167,7 @@ fn main() {
                 for a0 in 0..p {
                     for a1 in 0..p {
                         let a = [a0, a1];
-                        if a == [0, 0] {
-                            continue;
-                        }
-                        let tmp = fourier_transform(&a, &b, &s_ax, &s_bfx, p, false).norm();
+                        let tmp = fourier_transform(&a, &b, &s_ax, &s_bfx, p).norm();
                         ft_max = ft_max.max(tmp);
                     }
                 }
@@ -183,8 +177,9 @@ fn main() {
         let end = std::time::Instant::now();
 
         println!(
-            "p = {:?} | max = {:.2?} (took {:.2?})",
+            "p = {:?} | alpha = {:?} | max = {:.2?}\t (took {:.2?})",
             p,
+            alpha,
             ft_max,
             end - start
         );
