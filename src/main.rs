@@ -89,9 +89,6 @@ pub fn fourier_transform(
 fn main() {
     (5..10000).into_par_iter().for_each(|prime_index| {
         let start = std::time::Instant::now();
-        let mut f = vec![];
-        let mut s_ax = vec![];
-        let mut s_bfx = vec![];
 
         let p = StreamingSieve::nth_prime(prime_index) as u64;
         let mut alpha = 2u64;
@@ -127,6 +124,10 @@ fn main() {
 
         let t = 2.0 * PI * Complex32::i() / p as f32;
 
+        let mut f = Vec::with_capacity((p * p) as usize);
+        let mut s_ax = Vec::with_capacity((p * p) as usize);
+        let mut s_bfx = Vec::with_capacity((p * p) as usize);
+
         // Precomputations
         for x0 in 0..p {
             for x1 in 0..p {
@@ -144,8 +145,8 @@ fn main() {
         for a0 in 0..p {
             for a1 in 0..p {
                 let a = [a0, a1];
-                let mut sa = vec![];
-                let mut sbf = vec![];
+                let mut sa = Vec::with_capacity((p * p) as usize);
+                let mut sbf = Vec::with_capacity((p * p) as usize);
                 for x0 in 0..p {
                     for x1 in 0..p {
                         let x = [x0, x1];
