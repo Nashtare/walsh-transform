@@ -1,6 +1,5 @@
 use num::{complex::Complex32, BigInt, Integer, One, Zero};
 use primal::StreamingSieve;
-use rayon::prelude::*;
 use std::f32::consts::PI;
 
 // Computes the extended euclidean algorithm
@@ -84,7 +83,8 @@ pub fn fourier_transform(
 }
 
 fn main() {
-    (5..10000).into_par_iter().for_each(|prime_index| {
+    let mut prime_index = 5;
+    loop {
         let start = std::time::Instant::now();
 
         let p = StreamingSieve::nth_prime(prime_index) as u64;
@@ -183,5 +183,6 @@ fn main() {
             ft_max,
             end - start
         );
-    })
+        prime_index += 1;
+    }
 }
