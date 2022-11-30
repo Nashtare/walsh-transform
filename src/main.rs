@@ -1,7 +1,7 @@
-use num::{complex::Complex64, BigInt, Integer, One, Zero};
+use num::{complex::Complex32, BigInt, Integer, One, Zero};
 use primal::StreamingSieve;
 use rayon::prelude::*;
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 
 // Computes the extended euclidean algorithm
 pub fn egcd<T: Copy + Integer>(a: T, b: T) -> (T, T, T) {
@@ -64,12 +64,12 @@ pub fn scalar_product(a: &[u64; 2], b: &[u64; 2], p: u64) -> u64 {
 pub fn fourier_transform(
     a: &[u64; 2],
     b: &[u64; 2],
-    s_ax: &[Vec<Complex64>],
-    s_bfx: &[Vec<Complex64>],
+    s_ax: &[Vec<Complex32>],
+    s_bfx: &[Vec<Complex32>],
     p: u64,
     boo: bool,
-) -> Complex64 {
-    let mut result = Complex64::zero();
+) -> Complex32 {
+    let mut result = Complex32::zero();
     for x0 in 0..p {
         for x1 in 0..p {
             let x = [x0, x1];
@@ -125,7 +125,7 @@ fn main() {
         let alpha_inv = modinv(alpha as i64, (p - 1) as i64).unwrap() as u64 as u32;
         let alpha_inv_bigint = alpha_inv.into();
 
-        let t = 2.0 * PI * Complex64::i() / p as f64;
+        let t = 2.0 * PI * Complex32::i() / p as f32;
 
         // Precomputations
         for x0 in 0..p {
@@ -149,8 +149,8 @@ fn main() {
                 for x0 in 0..p {
                     for x1 in 0..p {
                         let x = [x0, x1];
-                        sa.push((t * scalar_product(&a, &x, p) as f64).exp());
-                        sbf.push((t * scalar_product(&a, &f[list_to_int(&x, p)], p) as f64).exp());
+                        sa.push((t * scalar_product(&a, &x, p) as f32).exp());
+                        sbf.push((t * scalar_product(&a, &f[list_to_int(&x, p)], p) as f32).exp());
                     }
                 }
                 s_ax.push(sa);
@@ -159,7 +159,7 @@ fn main() {
         }
 
         // Finding the maximum
-        let mut ft_max = 0f64;
+        let mut ft_max = 0f32;
         for b0 in 0..p {
             for b1 in 0..p {
                 let b = [b0, b1];
