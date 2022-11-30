@@ -23,14 +23,7 @@ pub fn modinv<T: Copy + Integer>(a: T, m: T) -> Option<T> {
 }
 
 pub fn list_to_int(l: &[u64], p: u64) -> usize {
-    let mut i = 0u64;
-    let mut j = 1u64;
-    for item in l.iter().rev() {
-        i += item * j;
-        j *= p;
-    }
-
-    i as usize
+    (l[1] + p * l[0]) as usize
 }
 
 pub fn apply_flystel_open(
