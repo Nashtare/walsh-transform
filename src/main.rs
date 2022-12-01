@@ -68,14 +68,10 @@ pub fn fourier_transform(
     p: u64,
 ) -> Complex32 {
     let mut result = Complex32::zero();
-    for x0 in 0..p {
-        for x1 in 0..p {
-            let x = [x0, x1];
-            let x_int = list_to_int(&x, p);
-            let tmp = s_bfx[list_to_int(b, p)][x_int];
-            if !tmp.is_zero() {
-                result += s_ax[list_to_int(a, p)][x_int] / tmp;
-            }
+    let a_index = list_to_int(a, p);
+    for (index, tmp) in s_bfx[list_to_int(b, p)].iter().enumerate() {
+        if !tmp.is_zero() {
+            result += s_ax[a_index][index] / tmp;
         }
     }
 
