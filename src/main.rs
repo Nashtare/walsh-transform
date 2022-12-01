@@ -124,9 +124,8 @@ fn main() {
         // Precomputations
         for x0 in 0..p {
             for x1 in 0..p {
-                let x = [x0, x1];
                 f.push(apply_flystel_open(
-                    &x,
+                    &[x0, x1],
                     &beta_bigint,
                     &delta_bigint,
                     &alpha_inv_bigint,
@@ -156,14 +155,12 @@ fn main() {
         let mut ft_max = 0f32;
         for b0 in 0..p {
             for b1 in 0..p {
-                let b = [b0, b1];
-                if b == [0, 0] {
+                if b0 == 0 && b1 == 0 {
                     continue;
                 }
                 for a0 in 0..p {
                     for a1 in 0..p {
-                        let a = [a0, a1];
-                        let tmp = fourier_transform(&a, &b, &s_ax, &s_bfx, p).norm();
+                        let tmp = fourier_transform(&[a0, a1], &[b0, b1], &s_ax, &s_bfx, p).norm();
                         ft_max = ft_max.max(tmp);
                     }
                 }
