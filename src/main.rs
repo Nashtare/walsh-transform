@@ -88,12 +88,7 @@ fn main() {
         let start = std::time::Instant::now();
 
         let p = StreamingSieve::nth_prime(prime_index) as u64;
-        let mut alpha = 2u64;
-        let (mut g, _, _) = egcd(alpha, p - 1);
-        while g != 1 {
-            alpha += 1;
-            (g, _, _) = egcd(alpha, p - 1);
-        }
+
         let mut beta = 2;
         let mut beta_bigint: BigInt = beta.into();
         loop {
@@ -115,82 +110,100 @@ fn main() {
         // Unwrapping is guaranteed to work
         let delta = modinv(beta as i64, p as i64).unwrap() as u64;
         let delta_bigint = delta.into();
-        // Unwrapping is guaranteed to work
-        let alpha_inv = modinv(alpha as i64, (p - 1) as i64).unwrap() as u64 as u32;
-        let alpha_inv_bigint = alpha_inv.into();
-
         let t = 2.0 * PI * Complex32::i() / p as f32;
 
-        let mut f = Vec::with_capacity((p * p) as usize);
         let mut s_ax = Vec::with_capacity((p * p) as usize);
-        let mut s_bfx = Vec::with_capacity((p * p) as usize);
-
-        // Precomputations
-        for x0 in 0..p {
-            for x1 in 0..p {
-                f.push(apply_flystel_open(
-                    &[x0, x1],
-                    &beta_bigint,
-                    &delta_bigint,
-                    &alpha_inv_bigint,
-                    p,
-                ));
-            }
-        }
-
         for a0 in 0..p {
             for a1 in 0..p {
                 let a = [a0, a1];
                 let mut sa = Vec::with_capacity((p * p) as usize);
-                let mut sbf = Vec::with_capacity((p * p) as usize);
                 for x0 in 0..p {
                     for x1 in 0..p {
                         let x = [x0, x1];
                         sa.push((t * scalar_product(&a, &x, p) as f32).exp());
-                        sbf.push((t * scalar_product(&a, &f[list_to_int(&x, p)], p) as f32).exp());
                     }
                 }
                 s_ax.push(sa);
-                s_bfx.push(sbf);
             }
         }
 
-        // Finding the maximum
-        let num_threads = rayon::current_num_threads() as u64;
-        let offset = (p * p) / num_threads;
+        let mut alpha = 2u64;
+        while alpha < min(30, p) {
+            let (mut g, _, _) = egcd(alpha, p - 1);
+            while g != 1 {
+                alpha += 1;
+                (g, _, _) = egcd(alpha, p - 1);
+            }
 
-        // Precomputations
-        let ft_max = RwLock::new(0f32);
-        (0..num_threads).into_par_iter().for_each(|i| {
-            let mut local_ft_max = 0f32;
+            // Unwrapping is guaranteed to work
+            let alpha_inv = modinv(alpha as i64, (p - 1) as i64).unwrap() as u64 as u32;
+            let alpha_inv_bigint = alpha_inv.into();
 
-            for b in i * offset..min((i + 1) * offset + 1, p * p) {
-                if b == 0 {
-                    continue;
+            let mut f = Vec::with_capacity((p * p) as usize);
+            let mut s_bfx = Vec::with_capacity((p * p) as usize);
+
+            // Precomputations
+            for x0 in 0..p {
+                for x1 in 0..p {
+                    f.push(apply_flystel_open(
+                        &[x0, x1],
+                        &beta_bigint,
+                        &delta_bigint,
+                        &alpha_inv_bigint,
+                        p,
+                    ));
                 }
-                let b_list = [b % p, b / p];
-                for a0 in 0..p {
-                    for a1 in 0..p {
-                        let tmp = fourier_transform(&[a0, a1], &b_list, &s_ax, &s_bfx, p).norm();
-                        local_ft_max = local_ft_max.max(tmp);
+            }
+
+            for a0 in 0..p {
+                for a1 in 0..p {
+                    let a = [a0, a1];
+                    let mut sbf = Vec::with_capacity((p * p) as usize);
+                    for x0 in 0..p {
+                        for x1 in 0..p {
+                            let x = [x0, x1];
+                            sbf.push(
+                                (t * scalar_product(&a, &f[list_to_int(&x, p)], p) as f32).exp(),
+                            );
+                        }
+                    }
+                    s_bfx.push(sbf);
+                }
+            }
+
+            // Finding the maximum
+            let num_threads = rayon::current_num_threads() as u64;
+            let offset = (p * p) / num_threads;
+
+            // Precomputations
+            let ft_max = RwLock::new(0f32);
+            (0..num_threads).into_par_iter().for_each(|i| {
+                let mut local_ft_max = 0f32;
+
+                for b in i * offset..min((i + 1) * offset + 1, p * p) {
+                    if b == 0 {
+                        continue;
+                    }
+                    let b_list = [b % p, b / p];
+                    for a0 in 0..p {
+                        for a1 in 0..p {
+                            let tmp =
+                                fourier_transform(&[a0, a1], &b_list, &s_ax, &s_bfx, p).norm();
+                            local_ft_max = local_ft_max.max(tmp);
+                        }
                     }
                 }
-            }
-            let cmp = ft_max.read().unwrap().clone();
-            if cmp < local_ft_max {
-                *ft_max.write().unwrap() = local_ft_max;
-            }
-        });
+                let cmp = ft_max.read().unwrap().clone();
+                if cmp < local_ft_max {
+                    *ft_max.write().unwrap() = local_ft_max;
+                }
+            });
 
+            println!("[{:?}, {:?}, {:.2?}]", p, alpha, ft_max.read().unwrap(),);
+            alpha += 1;
+        }
         let end = std::time::Instant::now();
-
-        println!(
-            "p = {:?} | alpha = {:?} | max = {:.2?}\t (took {:.2?})",
-            p,
-            alpha,
-            ft_max.read().unwrap(),
-            end - start
-        );
+        println!("======================== (took {:.2?})", end - start);
         prime_index += 1;
     }
 }
