@@ -2,6 +2,10 @@ use num::{complex::Complex32, BigInt, Integer, One, Zero};
 use primal::StreamingSieve;
 use std::f32::consts::PI;
 
+use rayon::prelude::*;
+use std::cmp::min;
+use std::sync::RwLock;
+
 // Computes the extended euclidean algorithm
 pub fn egcd<T: Copy + Integer>(a: T, b: T) -> (T, T, T) {
     if a == T::zero() {
@@ -152,20 +156,31 @@ fn main() {
         }
 
         // Finding the maximum
-        let mut ft_max = 0f32;
-        for b0 in 0..p {
-            for b1 in 0..p {
-                if b0 == 0 && b1 == 0 {
+        let num_threads = rayon::current_num_threads() as u64;
+        let offset = (p * p) / num_threads;
+
+        // Precomputations
+        let ft_max = RwLock::new(0f32);
+        (0..num_threads).into_par_iter().for_each(|i| {
+            let mut local_ft_max = 0f32;
+
+            for b in i * offset..min((i + 1) * offset + 1, p * p) {
+                if b == 0 {
                     continue;
                 }
+                let b_list = [b % p, b / p];
                 for a0 in 0..p {
                     for a1 in 0..p {
-                        let tmp = fourier_transform(&[a0, a1], &[b0, b1], &s_ax, &s_bfx, p).norm();
-                        ft_max = ft_max.max(tmp);
+                        let tmp = fourier_transform(&[a0, a1], &b_list, &s_ax, &s_bfx, p).norm();
+                        local_ft_max = local_ft_max.max(tmp);
                     }
                 }
             }
-        }
+            let cmp = ft_max.read().unwrap().clone();
+            if cmp < local_ft_max {
+                *ft_max.write().unwrap() = local_ft_max;
+            }
+        });
 
         let end = std::time::Instant::now();
 
@@ -173,7 +188,7 @@ fn main() {
             "p = {:?} | alpha = {:?} | max = {:.2?}\t (took {:.2?})",
             p,
             alpha,
-            ft_max,
+            ft_max.read().unwrap(),
             end - start
         );
         prime_index += 1;
