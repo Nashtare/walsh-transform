@@ -147,10 +147,10 @@ fn main() {
 
         // Generate the Flystel parameters
         let mut alpha = 2u64;
-        let (mut g, _, _) = egcd(alpha, p - 1);
+        let (mut g, _, _) = egcd(alpha as i64, (p - 1) as i64);
         while g != 1 {
             alpha += 1;
-            (g, _, _) = egcd(alpha, p - 1);
+            (g, _, _) = egcd(alpha as i64, (p - 1) as i64);
         }
         // Unwrapping is guaranteed to work
         let alpha_inv = modinv(alpha as i64, (p - 1) as i64).unwrap() as u64 as u32;
