@@ -74,7 +74,7 @@ pub fn list_to_int(l: &[u64; 2], p: u64) -> usize {
 ///
 /// The method assumes that the constants have been correctly computed,
 /// i.e. that:
-/// - beta is the smallest multiplicative generator of the prime fielf
+/// - beta is the smallest multiplicative generator of the prime field
 /// of characteristic p;
 /// - delta is the inverse of beta (e.g. delta = beta^(-1));
 /// - alpha_inv is the inverse of alpha, the smallest element such that
